@@ -222,7 +222,7 @@ function App() {
       <header className="topbar">
         <div className="brand">
           <span className="brand-dot" />
-          <h1>Office Pulse</h1>
+          <h1>Smart Office</h1>
         </div>
         <div className="topbar-right">
           <span className="clock">

@@ -1,14 +1,13 @@
 import "dotenv/config";
-import { Client, Events, GatewayIntentBits } from "discord.js";
+import { Client, Events, GatewayIntentBits, EmbedBuilder } from "discord.js";
 import { io } from "socket.io-client";
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
+const BACKEND_URL = "http://localhost:3000";
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const ALERT_CHANNEL_ID = process.env.ALERT_CHANNEL_ID;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 if (!DISCORD_TOKEN) {
-  console.error("DISCORD_TOKEN is missing. Copy .env.example to .env and fill it in.");
+  console.error("DISCORD_TOKEN is missing.");
   process.exit(1);
 }
 
@@ -20,8 +19,6 @@ const client = new Client({
   ]
 });
 
-const ROOMS = ["Drawing Room", "Work Room 1", "Work Room 2"];
-
 const ROOM_ALIASES = {
   drawing: "Drawing Room",
   drawingroom: "Drawing Room",
@@ -29,147 +26,176 @@ const ROOM_ALIASES = {
   work1: "Work Room 1",
   workroom1: "Work Room 1",
   "work room 1": "Work Room 1",
-  "work 1": "Work Room 1",
   work2: "Work Room 2",
   workroom2: "Work Room 2",
-  "work room 2": "Work Room 2",
-  "work 2": "Work Room 2"
+  "work room 2": "Work Room 2"
 };
 
 async function api(path) {
   const res = await fetch(`${BACKEND_URL}${path}`);
-  if (!res.ok) throw new Error(`API ${path} responded with ${res.status}`);
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
 }
 
-function pick(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
+function roomText(room) {
+  return [
+    `🌀 Fans ON: **${room.fansOn} / 3**`,
+    `💡 Lights ON: **${room.lightsOn} / 3**`,
+    `⚡ Power: **${room.power}W**`
+  ].join("\n");
 }
 
-function roomLine(summaryRoom) {
-  const { room, fansOn, lightsOn } = summaryRoom;
-  if (fansOn === 0 && lightsOn === 0) return `${room}: all off`;
-  const parts = [];
-  if (fansOn) parts.push(`${fansOn} fan${fansOn > 1 ? "s" : ""} ON`);
-  if (lightsOn) parts.push(`${lightsOn} light${lightsOn > 1 ? "s" : ""} ON`);
-  return `${room}: ${parts.join(", ")}`;
+function statusEmbed(summary) {
+  const totalPower = summary.rooms.reduce((sum, room) => sum + room.power, 0);
+
+  return new EmbedBuilder()
+    .setTitle("🏢 Office Live Status")
+    .setDescription("Here is the current real-time device condition.")
+    .setColor(0x2ecc71)
+    .addFields(
+      ...summary.rooms.map((room) => ({
+        name: room.room,
+        value: roomText(room),
+        inline: true
+      })),
+      {
+        name: "Total Power",
+        value: `⚡ **${totalPower}W**`,
+        inline: false
+      }
+    )
+    .setFooter({ text: "Smart Office Power Monitor" })
+    .setTimestamp();
 }
 
-// Optional LLM pass: rephrases the raw facts as a short, friendly message.
-// Falls back to built-in templates when no API key is configured.
-async function humanize(facts, fallback) {
-  if (!OPENAI_API_KEY) return fallback;
-  try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENAI_API_KEY}`
+function roomEmbed(room) {
+  return new EmbedBuilder()
+    .setTitle(`🚪 ${room.room}`)
+    .setDescription("Room-wise live device status")
+    .setColor(room.power > 0 ? 0xf1c40f : 0x95a5a6)
+    .addFields(
+      { name: "Fans", value: `🌀 **${room.fansOn} / 2 ON**`, inline: true },
+      { name: "Lights", value: `💡 **${room.lightsOn} / 3 ON**`, inline: true },
+      { name: "Power", value: `⚡ **${room.power}W**`, inline: true }
+    )
+    .setFooter({ text: "Data from shared backend" })
+    .setTimestamp();
+}
+
+function usageEmbed(usage) {
+  return new EmbedBuilder()
+    .setTitle("⚡ Power Usage")
+    .setDescription("Current electricity usage summary")
+    .setColor(0x3498db)
+    .addFields(
+      {
+        name: "Current Power",
+        value: `⚡ **${usage.totalPower}W**`,
+        inline: true
       },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        max_tokens: 160,
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a friendly office-monitoring assistant chatting on Discord. " +
-              "Rephrase the given facts as ONE short, warm, conversational message. " +
-              "Keep every number and room name exactly as given. No headers, no lists."
-          },
-          { role: "user", content: facts }
-        ]
-      })
-    });
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content?.trim() || fallback;
-  } catch (err) {
-    console.error("LLM call failed, using fallback:", err.message);
-    return fallback;
-  }
+      {
+        name: "Today’s Estimated Usage",
+        value: `📊 **${usage.todayKwh} kWh**`,
+        inline: true
+      }
+    )
+    .setFooter({ text: "Updated from live simulated device data" })
+    .setTimestamp();
+}
+
+function helpEmbed() {
+  return new EmbedBuilder()
+    .setTitle("🤖 Office Monitor Bot")
+    .setDescription("Use these commands to check the office devices.")
+    .setColor(0x9b59b6)
+    .addFields(
+      { name: "!status", value: "Shows all room device status" },
+      { name: "!room drawing", value: "Shows Drawing Room status" },
+      { name: "!room work1", value: "Shows Work Room 1 status" },
+      { name: "!room work2", value: "Shows Work Room 2 status" },
+      { name: "!usage", value: "Shows total power and daily usage" }
+    );
 }
 
 client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
-  const lower = message.content.trim().toLowerCase();
+
+  const text = message.content.trim().toLowerCase();
 
   try {
-    if (lower === "!status") {
+    if (text === "!help") {
+      await message.reply({ embeds: [helpEmbed()] });
+      return;
+    }
+
+    if (text === "!status") {
       const summary = await api("/api/summary");
-      const lines = summary.rooms.map(roomLine).join(". ") + ".";
-      const fallback = pick([
-        `Here's the office right now \uD83D\uDC40 ${lines}`,
-        `Quick walk-through for you: ${lines}`,
-        `Office check complete \u2705 ${lines}`
-      ]);
-      await message.reply(await humanize(`Office status: ${lines}`, fallback));
-    } else if (lower.startsWith("!room")) {
-      const query = lower.replace("!room", "").trim();
-      const room = ROOM_ALIASES[query];
-      if (!room) {
-        await message.reply(
-          "Hmm, I don't know that room \uD83E\uDD14 Try `!room drawing`, `!room work1` or `!room work2`."
-        );
+      await message.reply({ embeds: [statusEmbed(summary)] });
+      return;
+    }
+
+    if (text.startsWith("!room")) {
+      const query = text.replace("!room", "").trim();
+      const roomName = ROOM_ALIASES[query];
+
+      if (!roomName) {
+        await message.reply({
+          embeds: [
+            new EmbedBuilder()
+              .setTitle("❌ Room Not Found")
+              .setDescription("Try `!room drawing`, `!room work1`, or `!room work2`.")
+              .setColor(0xe74c3c)
+          ]
+        });
         return;
       }
+
       const summary = await api("/api/summary");
-      const data = summary.rooms.find((r) => r.room === room);
-      const line = roomLine(data);
-      const fallback = pick([
-        `${line}. That room is drawing ${data.power}W right now.`,
-        `Here you go \u2014 ${line}. Current power there: ${data.power}W.`
-      ]);
-      await message.reply(
-        await humanize(`${line}. Power draw in that room: ${data.power}W.`, fallback)
-      );
-    } else if (lower === "!usage") {
+      const room = summary.rooms.find((r) => r.room === roomName);
+
+      await message.reply({ embeds: [roomEmbed(room)] });
+      return;
+    }
+
+    if (text === "!usage") {
       const usage = await api("/api/usage");
-      const fallback = pick([
-        `Total power right now: ${usage.totalPower}W. Today's usage so far: ${usage.todayKwh} kWh \u26A1`,
-        `We're pulling ${usage.totalPower}W as we speak, and we've used ${usage.todayKwh} kWh today.`
-      ]);
-      await message.reply(
-        await humanize(
-          `Current total power: ${usage.totalPower}W. Energy used today: ${usage.todayKwh} kWh.`,
-          fallback
-        )
-      );
+      await message.reply({ embeds: [usageEmbed(usage)] });
+      return;
     }
   } catch (err) {
     console.error(err);
-    await message.reply(
-      "I couldn't reach the office backend \uD83D\uDE1E Is the server on port 3000 running?"
-    );
+    await message.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setTitle("⚠️ Backend Offline")
+          .setDescription("I could not reach the backend. Make sure the Node.js server is running.")
+          .setColor(0xe74c3c)
+      ]
+    });
   }
 });
 
-// ---------------------------------------------------------------------------
-// Proactive alerts: subscribe to the backend's Socket.IO feed and post any
-// newly triggered alert to the designated channel.
-// ---------------------------------------------------------------------------
 client.once(Events.ClientReady, (readyClient) => {
   console.log(`Bot logged in as ${readyClient.user.tag}`);
-  if (!ALERT_CHANNEL_ID) {
-    console.log("ALERT_CHANNEL_ID not set - proactive alerts disabled.");
-    return;
-  }
+
+  if (!ALERT_CHANNEL_ID) return;
 
   const feed = io(BACKEND_URL);
+
   feed.on("new-alert", async (alert) => {
     try {
       const channel = await client.channels.fetch(ALERT_CHANNEL_ID);
-      const time = new Date(alert.timestamp).toLocaleTimeString("en-GB", {
-        hour12: false
-      });
-      const fallback = `\u26A0\uFE0F Heads up! ${alert.message} (detected at ${time})`;
-      await channel.send(
-        await humanize(
-          `Office alert detected at ${time}: ${alert.message} Write it as a playful heads-up.`,
-          fallback
-        )
-      );
+
+      const embed = new EmbedBuilder()
+        .setTitle("🚨 Office Alert")
+        .setDescription(alert.message)
+        .setColor(0xe74c3c)
+        .setFooter({ text: "Automatic alert from live backend" })
+        .setTimestamp(new Date(alert.timestamp));
+
+      await channel.send({ embeds: [embed] });
     } catch (err) {
-      console.error("Failed to post alert to Discord:", err.message);
+      console.error("Failed to send alert:", err.message);
     }
   });
 });
