@@ -239,7 +239,7 @@ setInterval(() => {
 
   refreshAlerts();
   io.emit("device-update", devices);
-}, 20000);
+}, 5000);
 
 //connection with react
 
