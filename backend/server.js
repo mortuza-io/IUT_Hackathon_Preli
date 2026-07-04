@@ -73,7 +73,7 @@ const onLimit = 2 * 60 * 60 * 1000; // 2 hours
 const rooms = ["Drawing Room", "Work Room 1", "Work Room 2"];
 const deviceTypes = [
   { type: "Light", count: 3, power: 15 },
-  { type: "Fan", count: 3, power: 60 }
+  { type: "Fan", count: 2, power: 60 }
 ];
 
 export let devices = [];
