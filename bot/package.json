@@ -1,0 +1,15 @@
+{
+  "name": "office-bot",
+  "version": "1.0.0",
+  "description": "Discord bot for the office dashboard",
+  "main": "bot.js",
+  "type": "module",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5",
+    "socket.io-client": "^4.8.3"
+  }
+}

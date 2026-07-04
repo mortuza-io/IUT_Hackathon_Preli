@@ -1,0 +1,108 @@
+:root {
+  --radius: 14px;
+
+  /* Dark theme (default) */
+  --bg: #0b0d12;
+  --bg-glow: rgba(129, 140, 248, 0.07);
+  --surface: #131722;
+  --surface-2: #1a1f2b;
+  --border: #252b3b;
+  --text: #e6e9f0;
+  --muted: #8a93a6;
+  --accent: #818cf8;
+  --amber: #fbbf24;
+  --sky: #38bdf8;
+  --green: #34d399;
+  --red: #f87171;
+
+  --room-fill: #171c28;
+  --room-stroke: #2a3145;
+  --furn-fill: #1f2634;
+  --furn-stroke: #303952;
+  --chair-fill: #262e40;
+  --chair-stroke: #3a4560;
+  --bulb-off: #3a4356;
+  --bulb-stroke: #4c5670;
+  --ring-stroke: #4c5670;
+  --blade-off: #566178;
+  --hub: #94a3b8;
+  --row-border: #1c2130;
+  --pill-off-bg: #1c2130;
+  --track: #1c2130;
+  --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+
+  color-scheme: dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-theme="light"] {
+  --bg: #eef0f5;
+  --bg-glow: rgba(99, 102, 241, 0.06);
+  --surface: #ffffff;
+  --surface-2: #f4f6fa;
+  --border: #e2e6ef;
+  --text: #181c27;
+  --muted: #66708a;
+  --accent: #6366f1;
+  --amber: #f59e0b;
+  --sky: #0ea5e9;
+  --green: #059669;
+  --red: #dc2626;
+
+  --room-fill: #f8f9fc;
+  --room-stroke: #dde2ec;
+  --furn-fill: #e9edf5;
+  --furn-stroke: #d3dae6;
+  --chair-fill: #ffffff;
+  --chair-stroke: #c6cedc;
+  --bulb-off: #d5dae4;
+  --bulb-stroke: #b9c2d2;
+  --ring-stroke: #b9c2d2;
+  --blade-off: #a6b1c5;
+  --hub: #64748b;
+  --row-border: #eef1f6;
+  --pill-off-bg: #eef1f6;
+  --track: #e8ebf2;
+  --card-shadow: 0 8px 24px rgba(23, 28, 45, 0.08);
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background:
+    radial-gradient(1100px 500px at 75% -10%, var(--bg-glow), transparent 60%),
+    var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.45;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
