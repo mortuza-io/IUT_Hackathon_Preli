@@ -39,7 +39,7 @@ async function api(path) {
 
 function roomText(room) {
   return [
-    `🌀 Fans ON: **${room.fansOn} / 3**`,
+    `🌀 Fans ON: **${room.fansOn} / 2**`,
     `💡 Lights ON: **${room.lightsOn} / 3**`,
     `⚡ Power: **${room.power}W**`
   ].join("\n");
