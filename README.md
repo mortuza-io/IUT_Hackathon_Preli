@@ -12,7 +12,7 @@ The system simulates an IoT-enabled office where lights and fans are monitored t
 
 - Real-time device monitoring
 - 3 Office Rooms
-- 3 Lights + 3 Fans per room
+- 3 Lights + 2 Fans per room
 - Total Power Consumption
 - Room-wise Power Consumption
 - Active Alerts Panel
@@ -56,11 +56,11 @@ The project simulates an office with:
 Each room contains:
 
 - 3 Lights
-- 3 Fans
+- 2 Fans
 
 Total:
 
-- 18 simulated devices
+- 15 simulated devices
 
 Every few seconds random devices automatically switch ON/OFF to simulate real-world activity.
 
