@@ -89,31 +89,6 @@ Alerts are displayed on:
 
 ---
 
-## 🏗️ Project Structure
-
-```
-project/
-│
-├── backend/
-│   ├── server.js
-│   ├── package.json
-│   └── ...
-│
-├── frontend/
-│   ├── src/
-│   ├── public/
-│   └── ...
-│
-├── bot/
-│   ├── bot.js
-│   ├── package.json
-│   └── .env
-│
-└── README.md
-```
-
----
-
 ## 🛠️ Technologies Used
 
 ### Frontend
